@@ -1,48 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'One UI Sans';
+  src: url('/fonts/Variable_One_UI_Sans.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Primary Brand Color - Purple */
-    --primary: 7 89% 53%;
-    --primary-foreground: 0 0% 100%;
+    /* ONE UI - Primary Brand Colors */
+    --primary: 262 100% 55%;           /* #8F7AFF - Primary Purple */
+    --primary-foreground: 0 0% 100%;   /* White text on primary */
+    
+    --secondary: 270 68% 50%;          /* #8644D7 - Secondary Purple */
+    --secondary-foreground: 0 0% 100%;
 
-    /* Semantic Colors */
-    --success: 142 76% 36%;
-    --warning: 38 92% 50%;
-    --error: 0 84% 60%;
-    --info: 217 91% 60%;
+    /* ONE UI - Accent Colors */
+    --galaxy-ai: 188 100% 50%;         /* #00D4FF - Cyan Galaxy AI */
+    --galaxy-ai-foreground: 0 0% 0%;
+    
+    --accent-yellow: 45 100% 50%;      /* #FFD700 - Yellow */
+    --accent-yellow-foreground: 0 0% 0%;
 
-    /* Neutrals */
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
-    --card: 0 0% 100%;
+    /* Semantic Status Colors */
+    --success: 142 76% 36%;            /* Green - Success */
+    --warning: 38 92% 50%;             /* Amber - Warning */
+    --error: 0 84% 60%;                /* Red - Error */
+    --info: 217 91% 60%;               /* Blue - Info */
+
+    /* Neutrals - Light Mode */
+    --background: 0 0% 100%;           /* White */
+    --foreground: 224 71% 4%;          /* Near black */
+    --card: 0 0% 100%;                 /* White cards */
     --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
     /* Semantic Neutrals */
-    --secondary: 224 13% 91%;
+    --secondary-muted: 224 13% 91%;    /* Light gray */
     --secondary-foreground: 224 12% 24%;
-    --muted: 224 13% 91%;
-    --muted-foreground: 215 14% 34%;
-    --accent: 7 89% 53%;
+    --muted: 224 13% 91%;              /* Muted backgrounds */
+    --muted-foreground: 215 14% 34%;   /* Muted text */
+    --accent: 262 100% 55%;            /* Primary accent */
     --accent-foreground: 0 0% 100%;
 
     /* UI Elements */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 224 13% 91%;
-    --input: 224 13% 91%;
-    --ring: 7 89% 53%;
-    --radius: 0.5rem;
+    --border: 224 13% 91%;             /* Light borders */
+    --input: 224 13% 91%;              /* Input backgrounds */
+    --ring: 262 100% 55%;              /* Focus ring color */
+    
+    /* ONE UI Radius - More rounded corners */
+    --radius-sm: 0.25rem;              /* 4px */
+    --radius: 0.75rem;                 /* 12px - Standard */
+    --radius-md: 1rem;                 /* 16px */
+    --radius-lg: 1.5rem;               /* 24px - Large dialogs */
+    
+    /* Typography - ONE UI Sans */
+    --font-sans: 'One UI Sans', 'Inter', system-ui, sans-serif;
+    --font-mono: 'Courier New', monospace;
+    
+    /* Blur Effects (ONE UI style) */
+    --blur-light: 48px;
+    --blur-medium: 36px;
+    --blur-heavy: 24px;
   }
 
   .dark {
-    /* Primary Brand Color - Purple (lighter for dark) */
-    --primary: 271 81% 56%;
-    --primary-foreground: 224 71% 4%;
+    /* ONE UI - Dark Mode Primary */
+    --primary: 262 100% 65%;           /* Lighter purple for dark */
+    --primary-foreground: 224 71% 4%;  /* Dark text on light purple */
+    
+    --secondary: 270 68% 65%;          /* Lighter secondary */
+    --secondary-foreground: 224 71% 4%;
+
+    /* Galaxy AI & Accents in Dark */
+    --galaxy-ai: 188 100% 65%;         /* Brighter cyan */
+    --galaxy-ai-foreground: 224 71% 4%;
+    
+    --accent-yellow: 45 100% 60%;      /* Brighter yellow */
+    --accent-yellow-foreground: 224 71% 4%;
 
     /* Semantic Colors (dark mode) */
     --success: 142 71% 45%;
@@ -50,28 +93,28 @@
     --error: 0 84% 60%;
     --info: 217 100% 50%;
 
-    /* Neutrals (dark mode) */
-    --background: 224 71% 4%;
-    --foreground: 0 0% 98%;
-    --card: 224 71% 4%;
+    /* Neutrals - Dark Mode */
+    --background: 224 15% 12%;         /* Near black background */
+    --foreground: 0 0% 98%;            /* Near white text */
+    --card: 224 15% 16%;               /* Dark card background */
     --card-foreground: 0 0% 98%;
-    --popover: 224 71% 4%;
+    --popover: 224 15% 16%;
     --popover-foreground: 0 0% 98%;
 
     /* Semantic Neutrals (dark mode) */
-    --secondary: 224 9% 18%;
+    --secondary-muted: 224 9% 22%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 224 9% 18%;
-    --muted-foreground: 224 8% 56%;
-    --accent: 271 81% 56%;
+    --muted: 224 9% 22%;               /* Dark muted backgrounds */
+    --muted-foreground: 224 8% 70%;    /* Light muted text */
+    --accent: 262 100% 65%;
     --accent-foreground: 224 71% 4%;
 
     /* UI Elements (dark mode) */
     --destructive: 0 84% 60%;
     --destructive-foreground: 224 71% 4%;
-    --border: 224 9% 18%;
-    --input: 224 9% 18%;
-    --ring: 271 81% 56%;
+    --border: 224 9% 22%;              /* Dark borders */
+    --input: 224 9% 22%;               /* Dark inputs */
+    --ring: 262 100% 65%;
   }
 }
 
