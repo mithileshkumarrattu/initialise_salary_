@@ -1,69 +1,67 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { getAvailableTasksForNomination } from '@/lib/db/queries/tasks';
+import TaskPoolClient from '@/components/task-pool/TaskPoolClient';
+import { Plus, AlertCircle } from 'lucide-react';
+import RoleGate from '@/components/common/RoleGate';
 
-/**
- * Task Pool Page - Unstructured Task Board
- * 
- * This page shows:
- * - Available tasks to nominate for (OPEN status)
- * - Task nomination form
- * - Filters by priority, department, etc.
- * 
- * Data fetching:
- * - getAvailableTasksForNomination(departmentId)
- * 
- * Data mutation:
- * - Create nomination record when user self-nominates
- */
+export default async function TaskPoolPage() {
+  const supabase = await createClient();
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { ErrorFallback } from '@/components/common/ErrorFallback';
-import { EmptyState } from '@/components/common/EmptyState';
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) redirect('/login');
 
-export default function TaskPoolPage() {
-  const { user, loading: userLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: profile, error: profileError } = await supabase
+    .from('users')
+    .select('department_id, role')
+    .eq('id', user.id)
+    .single();
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user || userLoading) return;
+  const isGlobalRole = profile?.role === 'admin' || profile?.role === 'director' || profile?.role === 'finance' || profile?.role === 'hr_admin';
 
-      try {
-        setLoading(true);
-        // TODO: Fetch available tasks for nomination
-        setError(null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load task pool');
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (profileError || (!profile?.department_id && !isGlobalRole)) {
+    return (
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="w-12 h-12 text-warning mb-4" />
+        <h2 className="text-xl font-bold">Department Not Found</h2>
+        <p className="text-muted-foreground mt-2 text-center max-w-md">You must be assigned to a department to view the task pool.</p>
+      </div>
+    );
+  }
 
-    loadData();
-  }, [user, userLoading]);
-
-  if (userLoading || loading) return <LoadingSkeleton />;
-  if (error) return <ErrorFallback message={error} onRetry={() => window.location.reload()} />;
+  let tasks = [];
+  try {
+    tasks = await getAvailableTasksForNomination(profile.department_id);
+  } catch (err) {
+    console.error("Failed to load task pool:", err);
+    return (
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="w-12 h-12 text-error mb-4" />
+        <h2 className="text-xl font-bold">Failed to load task pool</h2>
+        <p className="text-muted-foreground mt-2 text-center max-w-md">There was a problem communicating with the database.</p>
+      </div>
+    );
+  }
 
   return (
-    <main className="flex-1 overflow-y-auto">
-      <div className="container mx-auto py-6 px-4 lg:px-6">
-        <h1 className="text-3xl font-bold text-foreground mb-6">Task Pool</h1>
-        
-        <div className="space-y-6">
-          {/* Filter bar */}
-          <div className="flex gap-4">
-            {/* TODO: Add priority filter, department filter, etc. */}
-          </div>
-
-          {/* Task board */}
-          <section>
-            <EmptyState message="No tasks available to nominate" />
-          </section>
+    <div className="container mx-auto py-6 px-4 lg:px-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Task Pool</h1>
+          <p className="text-sm text-muted-foreground mt-1">Discover open tasks in your department and nominate yourself.</p>
         </div>
+        
+        {/* Only HOD/Director can CREATE tasks */}
+        <RoleGate allowedRoles={['hod', 'director', 'admin']}>
+          <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition shadow-sm">
+            <Plus className="w-4 h-4" />
+            Create Task
+          </button>
+        </RoleGate>
       </div>
-    </main>
+
+      <TaskPoolClient tasks={tasks} />
+    </div>
   );
 }

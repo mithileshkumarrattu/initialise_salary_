@@ -1,81 +1,38 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { getUserFinanceData } from '@/lib/db/queries/finance';
+import FinanceClient from '@/components/finance/FinanceClient';
+import { AlertCircle } from 'lucide-react';
 
-/**
- * Finance Dashboard - Token Management (Finance/Director only)
- * 
- * This page shows (requires permission: manage_finance):
- * - All faculty token balances
- * - Pending token transfer approvals
- * - Token transaction history
- * - Payroll readiness
- * - Smart contract interactions
- * 
- * Data fetching:
- * - getOrgTokenBalances(orgId)
- * - getPendingTokenTransfers(deptId)
- * - getUserTokenTransactions(userId)
- */
+export default async function FinancePage() {
+  const supabase = await createClient();
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { RoleGate } from '@/components/layout/RoleGate';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { ErrorFallback } from '@/components/common/ErrorFallback';
-import { EmptyState } from '@/components/common/EmptyState';
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) redirect('/login');
 
-export default function FinancePage() {
-  const { user, loading: userLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user || userLoading) return;
-
-      try {
-        setLoading(true);
-        // TODO: Fetch token balances and transfer data
-        setError(null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load finance data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [user, userLoading]);
-
-  if (userLoading || loading) return <LoadingSkeleton />;
-  if (error) return <ErrorFallback message={error} onRetry={() => window.location.reload()} />;
+  let financeData;
+  try {
+    financeData = await getUserFinanceData(user.id);
+  } catch (err) {
+    console.error("Failed to load finance data:", err);
+    return (
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="w-12 h-12 text-error mb-4" />
+        <h2 className="text-xl font-bold">Failed to load finance data</h2>
+        <p className="text-muted-foreground mt-2 text-center max-w-md">There was a problem communicating with the database. Please try refreshing.</p>
+      </div>
+    );
+  }
 
   return (
-    <RoleGate requiredPermission="manage_finance" showError>
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto py-6 px-4 lg:px-6">
-          <h1 className="text-3xl font-bold text-foreground mb-6">Finance Dashboard</h1>
-          
-          <div className="space-y-6">
-            {/* Token pool overview */}
-            <section>
-              <h2 className="text-xl font-semibold text-foreground mb-4">Token Pool</h2>
-              <EmptyState message="Loading token pool information..." />
-            </section>
+    <div className="container mx-auto py-6 px-4 lg:px-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Finance</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your tokens, wallets, and transactions.</p>
+      </div>
 
-            {/* Faculty token balances */}
-            <section>
-              <h2 className="text-xl font-semibold text-foreground mb-4">Faculty Token Balances</h2>
-              <EmptyState message="No faculty members found" />
-            </section>
-
-            {/* Pending transfers */}
-            <section>
-              <h2 className="text-xl font-semibold text-foreground mb-4">Pending Approvals</h2>
-              <EmptyState message="No pending token transfers" />
-            </section>
-          </div>
-        </div>
-      </main>
-    </RoleGate>
+      <FinanceClient data={financeData} />
+    </div>
   );
 }
