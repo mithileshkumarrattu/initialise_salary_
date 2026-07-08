@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supabase Test</title>
+</head>
+<body style="background: #0f172a; color: #f8fafc; font-family: sans-serif; padding: 20px; font-size: 14px; line-height: 1.5;">
+  <h1>Supabase Table Discovery</h1>
+  <pre id="output">Loading...</pre>
+  <script>
+    const url = "https://twtrcynbwevqlqavaeas.supabase.co/rest/v1/";
+    const apiKey = "sb_publishable_BqC70w-o_aQVfuVHzZ2clw_7TZYDts9";
+    
+    async function test() {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "apikey": apiKey,
+            "Authorization": "Bearer " + apiKey
+          }
+        });
+        if (!res.ok) {
+          document.getElementById("output").innerText = "Error: " + res.status + " " + res.statusText;
+          const text = await res.text();
+          document.getElementById("output").innerText += "\n\nBody:\n" + text;
+          return;
+        }
+        const data = await res.json();
+        
+        // Format tables nicely
+        if (data.paths) {
+          const paths = Object.keys(data.paths);
+          document.getElementById("output").innerText = "SUCCESS! Connected successfully.\n\nExposed Paths / Tables:\n" + 
+            paths.filter(p => p !== "/").map(p => " - " + p).join("\n");
+        } else {
+          document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        document.getElementById("output").innerText = "Exception: " + err.message;
+      }
+    }
+    test();
+  </script>
+</body>
+</html>
