@@ -1,41 +1,182 @@
 import { createClient } from '@/lib/supabase/server';
 
+// ─── Type Definitions ─────────────────────────────────────────────────────
+
+export type AssignedTask = {
+  id: string;
+  title: string;
+  description: string | null;
+  token_points: number;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  due_date: string | null;
+  status: string;
+  department_id: string | null;
+  // nomination fields attached
+  nomination_id: string;
+  nomination_status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  nominated_at: string;
+};
+
+export type OpenTask = {
+  id: string;
+  title: string;
+  description: string | null;
+  token_points: number;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  due_date: string | null;
+  status: string;
+  department_id: string | null;
+  creator_id: string | null;
+  // Has user already nominated?
+  my_nomination_status?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | null;
+};
+
+// ─── Faculty: Tasks assigned to me ────────────────────────────────────────
+
 /**
- * Get unstructured tasks for a department with optional filters
+ * Faculty view: Get all tasks I've been accepted for (nominations.status = 'ACCEPTED')
  * @throws Error if query fails
  */
-export async function getUnstructuredTasks(
-  departmentId: string,
-  options?: {
-    status?: 'OPEN' | 'NOMINATED' | 'ASSIGNED' | 'COMPLETED';
-    priority?: 'HIGH' | 'MEDIUM' | 'LOW';
-  }
-) {
+export async function getAssignedTasks(userId: string): Promise<AssignedTask[]> {
   const supabase = await createClient();
-  
-  let query = supabase
+
+  const { data, error } = await supabase
+    .from('nominations')
+    .select(`
+      id,
+      status,
+      created_at,
+      task:unstructured_tasks(
+        id, title, description, token_points, priority, due_date, status, department_id
+      )
+    `)
+    .eq('user_id', userId)
+    .eq('status', 'ACCEPTED')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getAssignedTasks error:', JSON.stringify(error, null, 2));
+    throw new Error(`Failed to fetch assigned tasks: ${error.message}`);
+  }
+
+  return (data || [])
+    .filter(nom => nom.task) // filter out orphan nominations
+    .map(nom => ({
+      ...nom.task,
+      nomination_id: nom.id,
+      nomination_status: nom.status as 'ACCEPTED',
+      nominated_at: nom.created_at,
+    })) as AssignedTask[];
+}
+
+// ─── Faculty: Open tasks I can nominate for ───────────────────────────────
+
+/**
+ * Faculty view: Open tasks in their department. Also marks which ones they've already nominated.
+ * @throws Error if query fails
+ */
+export async function getOpenPoolTasksForFaculty(
+  userId: string,
+  departmentId?: string | null
+): Promise<OpenTask[]> {
+  const supabase = await createClient();
+
+  let taskQuery = supabase
     .from('unstructured_tasks')
-    .select('*')
-    .eq('department_id', departmentId);
+    .select('id, title, description, token_points, priority, due_date, status, department_id, creator_id')
+    .in('status', ['OPEN', 'NOMINATED']); // NOMINATED means others applied but still open
 
-  if (options?.status) {
-    query = query.eq('status', options.status);
-  }
-  
-  if (options?.priority) {
-    query = query.eq('priority', options.priority);
+  if (departmentId) {
+    taskQuery = taskQuery.eq('department_id', departmentId);
   }
 
-  const { data, error } = await query.order('priority', { ascending: false });
+  const { data: tasks, error: taskError } = await taskQuery.order('priority', { ascending: false });
+  if (taskError) throw new Error(`Failed to fetch task pool: ${taskError.message}`);
 
-  if (error) throw new Error(`Failed to fetch unstructured tasks: ${error.message}`);
+  // Get my nominations to mark which I already applied for
+  const { data: myNominations } = await supabase
+    .from('nominations')
+    .select('task_id, status')
+    .eq('user_id', userId);
+
+  const nominationMap = new Map<string, string>();
+  (myNominations || []).forEach(n => nominationMap.set(n.task_id, n.status));
+
+  return (tasks || []).map(task => ({
+    ...task,
+    my_nomination_status: nominationMap.get(task.id) ?? null,
+  })) as OpenTask[];
+}
+
+// ─── HOD: Department tasks needing approval ───────────────────────────────
+
+/**
+ * HOD/Manager view: All tasks in department with COMPLETED status (needing approval)
+ * @throws Error if query fails
+ */
+export async function getTasksToApprove(departmentId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('unstructured_tasks')
+    .select(`
+      id, title, description, token_points, priority, due_date, status, department_id,
+      nominations(id, user_id, status, created_at, users(id, name, email))
+    `)
+    .eq('department_id', departmentId)
+    .eq('status', 'COMPLETED')
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('getTasksToApprove error:', JSON.stringify(error, null, 2));
+    throw new Error(`Failed to fetch tasks to approve: ${error.message}`);
+  }
+
   return data || [];
 }
 
+// ─── HOD: Department overview ─────────────────────────────────────────────
+
 /**
- * Get structured tasks (classes/labs) for a user on a specific date
+ * HOD/Manager view: All tasks in department (any status) for overview
  * @throws Error if query fails
  */
+export async function getDepartmentTasks(departmentId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('unstructured_tasks')
+    .select('id, title, status, priority, token_points, due_date')
+    .eq('department_id', departmentId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`Failed to fetch department tasks: ${error.message}`);
+  return data || [];
+}
+
+// ─── HOD: Nominations for a task ─────────────────────────────────────────
+
+/**
+ * HOD/Manager view: Who has nominated for a specific task
+ */
+export async function getNominationsForTask(taskId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('nominations')
+    .select(`
+      id, status, created_at,
+      users(id, name, email, role, progress_percentage)
+    `)
+    .eq('task_id', taskId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch nominations: ${error.message}`);
+  return data || [];
+}
+
+// ─── Director: Org-wide structured tasks query ────────────────────────────
+
 export async function getStructuredTasks(userId: string, date?: string) {
   const supabase = await createClient();
   const queryDate = date || new Date().toISOString().split('T')[0];
@@ -51,64 +192,8 @@ export async function getStructuredTasks(userId: string, date?: string) {
   return data || [];
 }
 
-/**
- * Get tasks assigned to a user via task_nominations
- * @throws Error if query fails
- */
-export async function getAssignedTasks(userId: string) {
-  const supabase = await createClient();
+// ─── Task details ─────────────────────────────────────────────────────────
 
-  // Fetch the nominations and join the unstructured_tasks data
-  const { data, error } = await supabase
-    .from('task_nominations')
-    .select(`
-      *,
-      task:unstructured_tasks(*)
-    `)
-    .eq('faculty_id', userId)
-    .in('status', ['ASSIGNED', 'IN_PROGRESS', 'PROOF_SUBMITTED'])
-    .order('nominated_at', { ascending: false });
-
-  if (error) {
-    console.error("Task fetch error:", JSON.stringify(error, null, 2));
-    throw new Error(`Failed to fetch assigned tasks: ${error.message}`);
-  }
-  
-  // Flatten the response so the component receives tasks directly with nomination data attached
-  return (data || []).map(nom => ({
-    ...nom.task,
-    nomination_id: nom.id,
-    nomination_status: nom.status,
-    nominated_at: nom.nominated_at
-  }));
-}
-
-/**
- * Get tasks for user's nomination (OPEN status)
- * @throws Error if query fails
- */
-export async function getAvailableTasksForNomination(departmentId?: string | null) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('unstructured_tasks')
-    .select('*')
-    .eq('status', 'OPEN');
-
-  if (departmentId) {
-    query = query.eq('department_id', departmentId);
-  }
-
-  const { data, error } = await query.order('priority', { ascending: false });
-
-  if (error) throw new Error(`Failed to fetch available tasks: ${error.message}`);
-  return data || [];
-}
-
-/**
- * Get task details with all related data
- * @throws Error if query fails
- */
 export async function getTaskDetails(taskId: string) {
   const supabase = await createClient();
 
@@ -116,8 +201,7 @@ export async function getTaskDetails(taskId: string) {
     .from('unstructured_tasks')
     .select(`
       *,
-      created_by_user:users!created_by_id(id, name),
-      assigned_to_user:users!assigned_to_id(id, name),
+      creator:users!creator_id(id, name),
       department:departments(id, name)
     `)
     .eq('id', taskId)

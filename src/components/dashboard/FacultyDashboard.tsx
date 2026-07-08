@@ -1,7 +1,9 @@
 "use client";
 
-import { CheckCircle2, Coins, TrendingUp, Wallet, Plus, ArrowRightLeft, Bell, BookOpen } from "lucide-react";
+import { CheckCircle2, Coins, TrendingUp, Plus, BookOpen, Clock } from "lucide-react";
 import Link from "next/link";
+import type { FacultyDashboardStats } from "@/lib/db/queries/dashboard";
+import type { AssignedTask } from "@/lib/db/queries/tasks";
 
 interface Props {
   profile: {
@@ -13,13 +15,18 @@ interface Props {
     token_balance: number;
     loan_balance: number;
   };
+  stats: FacultyDashboardStats | null;
+  activeTasks: AssignedTask[];
 }
 
-export default function FacultyDashboard({ profile }: Props) {
-  const progress = profile.progress_percentage ?? 0;
+export default function FacultyDashboard({ profile, stats, activeTasks }: Props) {
+  const progress = stats?.progressPercentage ?? profile.progress_percentage ?? 0;
   const canInitiateSalary = progress >= 85;
   const circumference = 2 * Math.PI * 52;
   const offset = circumference - (progress / 100) * circumference;
+
+  const tokenBalance = stats?.tokenBalance ?? profile.token_balance ?? 0;
+  const loanBalance = stats?.loanBalance ?? profile.loan_balance ?? 0;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -64,15 +71,17 @@ export default function FacultyDashboard({ profile }: Props) {
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Unstructured (30%)</span>
-              <span className="font-medium text-foreground">—</span>
+              <span className="font-medium text-foreground">{stats?.completedTasks ?? 0} Done</span>
             </div>
           </div>
 
           {/* Salary Button */}
           {canInitiateSalary ? (
-            <button className="w-full bg-success text-success-foreground hover:bg-success/90 rounded-lg py-2.5 text-sm font-semibold transition shadow-sm">
-              🎉 Initiate Salary Transfer
-            </button>
+            <Link href="/finance" className="w-full block">
+              <button className="w-full bg-success text-success-foreground hover:bg-success/90 rounded-lg py-2.5 text-sm font-semibold transition shadow-sm">
+                🎉 Initiate Salary Transfer
+              </button>
+            </Link>
           ) : (
             <div className="w-full bg-muted rounded-lg py-2.5 text-sm text-center text-muted-foreground">
               Salary available at 85% progress
@@ -88,20 +97,34 @@ export default function FacultyDashboard({ profile }: Props) {
               <Coins className="w-4 h-4 text-primary" />
             </div>
             <div className="text-3xl font-bold text-foreground">
-              {profile.token_balance ?? 0} <span className="text-primary text-xl">WTK</span>
+              {tokenBalance} <span className="text-primary text-xl">WTK</span>
             </div>
           </div>
 
-          {(profile.loan_balance ?? 0) > 0 && (
+          {loanBalance > 0 && (
             <div className="bg-error/5 border border-error/20 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-error">Work Loan</span>
                 <TrendingUp className="w-4 h-4 text-error" />
               </div>
               <div className="text-2xl font-bold text-error">
-                {profile.loan_balance} WTK
+                {loanBalance} WTK
               </div>
               <p className="text-xs text-muted-foreground mt-1">Outstanding loan balance</p>
+            </div>
+          )}
+          
+          {/* Quick Stats */}
+          {stats && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                 <div className="text-2xl font-bold text-foreground">{stats.activeTasks}</div>
+                 <div className="text-xs text-muted-foreground mt-1">Active Tasks</div>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                 <div className="text-2xl font-bold text-foreground">{stats.pendingNominations}</div>
+                 <div className="text-xs text-muted-foreground mt-1">Pending Noms</div>
+              </div>
             </div>
           )}
 
@@ -141,13 +164,36 @@ export default function FacultyDashboard({ profile }: Props) {
           <h2 className="text-base font-semibold text-foreground">Active Commitments</h2>
           <Link href="/my-work" className="text-sm text-primary hover:underline">View all</Link>
         </div>
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <CheckCircle2 className="w-8 h-8 text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">No active tasks</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            <Link href="/task-pool" className="text-primary hover:underline">Browse the task pool</Link> to get started
-          </p>
-        </div>
+        
+        {activeTasks && activeTasks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeTasks.map(task => (
+              <div key={task.id} className="border border-border rounded-xl p-4 hover:border-primary/50 transition">
+                 <h3 className="font-semibold text-foreground truncate">{task.title}</h3>
+                 <div className="flex items-center gap-4 mt-3">
+                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Coins className="w-4 h-4 text-primary" />
+                      {task.token_points} WTK
+                   </div>
+                   {task.due_date && (
+                     <div className="flex items-center gap-1 text-sm text-warning">
+                        <Clock className="w-4 h-4" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                     </div>
+                   )}
+                 </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <CheckCircle2 className="w-8 h-8 text-muted-foreground/30 mb-2" />
+            <p className="text-sm text-muted-foreground">No active tasks</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              <Link href="/task-pool" className="text-primary hover:underline">Browse the task pool</Link> to get started
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

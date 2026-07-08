@@ -10,7 +10,7 @@ export type TeamMember = {
 };
 
 /**
- * Get all team members in a specific department
+ * Get all team members in a department (or all if no departmentId)
  * @throws Error if query fails
  */
 export async function getDepartmentTeam(departmentId?: string | null): Promise<TeamMember[]> {
@@ -25,11 +25,11 @@ export async function getDepartmentTeam(departmentId?: string | null): Promise<T
   }
 
   const { data, error } = await query
-    .order('role', { ascending: true }) // Sorts alphabetically (admin, dean, director, faculty, finance, hod)
+    .order('role', { ascending: true })
     .order('name', { ascending: true });
 
   if (error) {
-    console.error("Team fetch error:", error);
+    console.error('getDepartmentTeam error:', JSON.stringify(error, null, 2));
     throw new Error(`Failed to fetch department team: ${error.message}`);
   }
 

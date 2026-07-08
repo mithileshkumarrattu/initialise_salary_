@@ -17,12 +17,12 @@ export type FinanceData = {
 };
 
 /**
- * Fetch finance data for a user
+ * Fetch finance data for a user using correct table names
  */
 export async function getUserFinanceData(userId: string): Promise<FinanceData> {
   const supabase = await createClient();
-  
-  // 1. Get user balance
+
+  // 1. User's current token balance
   const { data: user, error: userError } = await supabase
     .from('users')
     .select('token_balance')
@@ -31,71 +31,68 @@ export async function getUserFinanceData(userId: string): Promise<FinanceData> {
 
   if (userError) throw new Error(`Failed to fetch user balance: ${userError.message}`);
 
-  const availableBalance = Number(user.token_balance) || 0;
+  const availableBalance = Number(user?.token_balance ?? 0);
 
-  // 2. Get pending transfers (INITIATED or HOD_APPROVED)
+  // 2. Salary transfers (pending & completed)
   const { data: transfers, error: transferError } = await supabase
     .from('salary_transfers')
     .select('*')
-    .eq('faculty_id', userId);
+    .eq('faculty_id', userId)
+    .order('created_at', { ascending: false });
 
   if (transferError) throw new Error(`Failed to fetch transfers: ${transferError.message}`);
 
-  const pendingTransfers = (transfers || []).filter(t => t.status === 'INITIATED' || t.status === 'HOD_APPROVED');
+  const pendingTransfers = (transfers || []).filter(
+    t => t.status === 'INITIATED' || t.status === 'HOD_APPROVED'
+  );
   const completedTransfers = (transfers || []).filter(t => t.status === 'COMPLETED');
 
-  const pendingBalance = pendingTransfers.reduce((sum, t) => sum + Number(t.amount_tokens), 0);
-  
-  // Total earned = Current Balance + What has already been withdrawn/transferred
-  const totalWithdrawn = completedTransfers.reduce((sum, t) => sum + Number(t.amount_tokens), 0);
+  const pendingBalance = pendingTransfers.reduce((sum, t) => sum + Number(t.amount_tokens ?? 0), 0);
+  const totalWithdrawn = completedTransfers.reduce((sum, t) => sum + Number(t.amount_tokens ?? 0), 0);
   const totalEarned = availableBalance + totalWithdrawn;
 
-  // 3. Compile Transactions (Debits from salary_transfers, Credits from task_nominations)
+  // 3. Build transaction list
   const transactions: Transaction[] = [];
 
-  // Add withdrawals
-  transfers.forEach(t => {
+  // Salary transfer debits
+  (transfers || []).forEach(t => {
     transactions.push({
       id: t.id,
       type: 'DEBIT',
-      title: 'Withdrawal Request',
-      description: `Status: ${t.status.replace('_', ' ')}`,
-      amount: Number(t.amount_tokens),
-      date: t.created_at
+      title: 'Salary Transfer',
+      description: `Status: ${t.status.replace(/_/g, ' ')}`,
+      amount: Number(t.amount_tokens ?? 0),
+      date: t.created_at,
     });
   });
 
-  // Add credits from completed task nominations
-  const { data: completedTasks, error: taskError } = await supabase
-    .from('task_nominations')
+  // Credits from completed task nominations (nominations table, not task_nominations)
+  const { data: completedNominations, error: nomError } = await supabase
+    .from('nominations')
     .select(`
-      id, 
-      updated_at, 
-      task:unstructured_tasks(title, token_value)
+      id,
+      updated_at,
+      task:unstructured_tasks(title, token_points)
     `)
-    .eq('faculty_id', userId)
+    .eq('user_id', userId)
     .eq('status', 'COMPLETED');
 
-  if (!taskError && completedTasks) {
-    completedTasks.forEach(t => {
-      transactions.push({
-        id: t.id,
-        type: 'CREDIT',
-        title: 'Task Reward',
-        description: `Completed: ${t.task.title}`,
-        amount: Number(t.task.token_value),
-        date: t.updated_at
-      });
+  if (!nomError && completedNominations) {
+    completedNominations.forEach(n => {
+      if (n.task) {
+        transactions.push({
+          id: n.id,
+          type: 'CREDIT',
+          title: 'Task Reward',
+          description: `Completed: ${n.task.title}`,
+          amount: Number(n.task.token_points ?? 0),
+          date: n.updated_at,
+        });
+      }
     });
   }
 
-  // Sort transactions descending by date
   transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  return {
-    availableBalance,
-    pendingBalance,
-    totalEarned,
-    transactions
-  };
+  return { availableBalance, pendingBalance, totalEarned, transactions };
 }

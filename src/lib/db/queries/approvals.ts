@@ -13,100 +13,87 @@ export type PendingApproval = {
 };
 
 /**
- * Get all pending approvals for a user based on their role and department
- * @throws Error if query fails
+ * Get all pending approvals based on role and department
+ * - HOD/Dean: sees COMPLETED nominations in their dept (task proof review)
+ * - Finance/Admin/Director: sees salary_transfers pending finance approval
  */
 export async function getPendingApprovals(
-  role: string, 
-  departmentId?: string
+  role: string,
+  departmentId?: string | null
 ): Promise<PendingApproval[]> {
   const supabase = await createClient();
   const approvals: PendingApproval[] = [];
 
-  // HODs approve task proofs in their department and initiate salary transfers
-  if (role === 'hod' || role === 'dean' || role === 'director') {
-    // 1. Task Nominations pending proof approval
-    if (departmentId) {
-      // Find task nominations where status is 'PROOF_SUBMITTED' for tasks in this department
-      // Since task_nominations doesn't have department_id, we need to join through unstructured_tasks
-      const { data: nominations, error: nomError } = await supabase
-        .from('task_nominations')
-        .select(`
-          *,
-          faculty:users!faculty_id(name),
-          task:unstructured_tasks!inner(title, description, token_value, department_id)
-        `)
-        .eq('status', 'PROOF_SUBMITTED')
-        .eq('task.department_id', departmentId);
+  const isHod = role === 'hod' || role === 'dean' || role === 'director';
+  const isFinance = role === 'finance' || role === 'admin' || role === 'director';
 
-      if (!nomError && nominations) {
-        approvals.push(...nominations.map(n => ({
-          id: n.id,
-          type: 'TASK_PROOF' as const,
-          title: `Task Proof: ${n.task.title}`,
-          description: `User submitted proof for task. ${n.task.description}`,
-          requested_by: n.faculty?.name || 'Unknown User',
-          requested_at: n.updated_at || n.nominated_at,
-          amount: n.task.token_value,
-          status: n.status,
-          original_record: n
-        })));
-      }
-
-      // 2. Salary Transfers pending HOD approval
-      const { data: transfers, error: transferError } = await supabase
-        .from('salary_transfers')
-        .select(`
-          *,
-          faculty:users!faculty_id(name, department_id)
-        `)
-        .eq('status', 'INITIATED');
-        
-      if (!transferError && transfers) {
-        // Filter by department in memory if RLS doesn't handle it
-        const deptTransfers = transfers.filter(t => t.faculty?.department_id === departmentId);
-        approvals.push(...deptTransfers.map(t => ({
-          id: t.id,
-          type: 'SALARY_TRANSFER' as const,
-          title: 'Salary Transfer Request',
-          description: `User requested to convert tokens to salary.`,
-          requested_by: t.faculty?.name || 'Unknown User',
-          requested_at: t.created_at || new Date().toISOString(),
-          amount: t.amount_tokens,
-          status: t.status,
-          original_record: t
-        })));
-      }
-    }
-  }
-
-  // Finance/Admin approve salary transfers that have passed HOD
-  if (role === 'finance' || role === 'admin' || role === 'director') {
-    const { data: transfers, error: transferError } = await supabase
-      .from('salary_transfers')
+  // ─── HOD: Review completed tasks in their department ───────────────────
+  if (isHod && departmentId) {
+    const { data: nominations, error: nomError } = await supabase
+      .from('nominations')
       .select(`
-        *,
-        faculty:users!faculty_id(name, department_id)
+        id, status, created_at,
+        user:users!user_id(id, name),
+        task:unstructured_tasks!inner(id, title, description, token_points, department_id)
       `)
-      .in('status', ['HOD_APPROVED']);
-      
-    if (!transferError && transfers) {
-      approvals.push(...transfers.map(t => ({
-        id: t.id,
-        type: 'SALARY_TRANSFER' as const,
-        title: 'Final Salary Payout',
-        description: `HOD Approved salary transfer ready for payout.`,
-        requested_by: t.faculty?.name || 'Unknown User',
-        requested_at: t.created_at || new Date().toISOString(),
-        amount: t.amount_tokens,
-        status: t.status,
-        original_record: t
+      .eq('status', 'COMPLETED') // faculty submitted, waiting HOD approval
+      .eq('task.department_id', departmentId);
+
+    if (!nomError && nominations) {
+      approvals.push(...nominations.map(n => ({
+        id: n.id,
+        type: 'TASK_PROOF' as const,
+        title: `Task Proof: ${n.task.title}`,
+        description: `Proof submitted for review. ${n.task.description ?? ''}`,
+        requested_by: n.user?.name ?? 'Unknown User',
+        requested_at: n.created_at,
+        amount: Number(n.task.token_points ?? 0),
+        status: n.status,
+        original_record: n,
       })));
     }
   }
 
-  // Sort by date requested (newest first)
-  return approvals.sort((a, b) => 
-    new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
+  // ─── Finance: Approve salary transfers ────────────────────────────────
+  if (isFinance) {
+    const statusesToFetch = role === 'hod' || role === 'dean'
+      ? ['INITIATED']         // HOD approves first
+      : ['HOD_APPROVED'];     // Finance/Director approves after HOD
+
+    if (role === 'director') {
+      statusesToFetch.push('INITIATED'); // Director sees everything
+    }
+
+    const { data: transfers, error: transferError } = await supabase
+      .from('salary_transfers')
+      .select(`
+        id, status, amount_tokens, created_at,
+        faculty:users!faculty_id(id, name, department_id)
+      `)
+      .in('status', statusesToFetch);
+
+    if (!transferError && transfers) {
+      let filtered = transfers;
+      // If HOD, filter to own department
+      if ((role === 'hod' || role === 'dean') && departmentId) {
+        filtered = transfers.filter(t => t.faculty?.department_id === departmentId);
+      }
+
+      approvals.push(...filtered.map(t => ({
+        id: t.id,
+        type: 'SALARY_TRANSFER' as const,
+        title: 'Salary Transfer Request',
+        description: `User requested to convert ${t.amount_tokens} WTK to salary.`,
+        requested_by: t.faculty?.name ?? 'Unknown User',
+        requested_at: t.created_at,
+        amount: Number(t.amount_tokens ?? 0),
+        status: t.status,
+        original_record: t,
+      })));
+    }
+  }
+
+  return approvals.sort(
+    (a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
   );
 }
