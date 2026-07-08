@@ -1,0 +1,396 @@
+================================================================================
+                    WORKTOKEN PLATFORM - DOCUMENTATION INDEX
+================================================================================
+
+CREATED: July 8, 2026
+TOTAL SIZE: 3,700+ lines | 7 comprehensive documents
+STATUS: ✅ PRODUCTION READY
+
+================================================================================
+                          QUICK START GUIDE
+================================================================================
+
+👉 START HERE:
+   1. Open: README_START_HERE.md (10 minutes)
+   2. Then: MASTER_PROMPT_FOR_AGENTS.md (30 minutes)
+   3. Then: DESIGN_SYSTEM_SETUP.md (20 minutes)
+   4. Then: AGENT_QUICK_REFERENCE.md (10 minutes)
+   
+Total time before coding: 70 minutes
+
+================================================================================
+                       DOCUMENTATION FILES
+================================================================================
+
+┌─ FOUNDATIONAL DOCUMENTS ─────────────────────────────────────────────────┐
+│                                                                          │
+│ 📄 README_START_HERE.md (388 lines, 11 KB)                             │
+│    → Entry point for all roles                                         │
+│    → High-level overview                                               │
+│    → Guide by role (agents, team, managers, reviewers)                │
+│    → Common questions answered                                         │
+│    👉 READ FIRST                                                        │
+│                                                                          │
+│ 📄 MASTER_PROMPT_FOR_AGENTS.md (558 lines, 21 KB)                      │
+│    → The absolute ground truth specification                           │
+│    → Why the old agent hallucinated                                    │
+│    → Golden rules (7 non-negotiable laws)                              │
+│    → Complete page map with all specifications                         │
+│    → Dual-template system (college + enterprise)                       │
+│    👉 READ SECOND                                                       │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌─ DESIGN & IMPLEMENTATION DOCUMENTS ──────────────────────────────────────┐
+│                                                                          │
+│ 🎨 DESIGN_SYSTEM_SETUP.md (602 lines, 15 KB)                           │
+│    → Exact color specifications (hex codes)                            │
+│    → Typography system (sizes, weights, cases)                         │
+│    → Spacing grid (8px base system)                                    │
+│    → Border radius per component                                       │
+│    → Glass morphism effects                                            │
+│    → Component-specific styling                                        │
+│    → Font setup (Variable One UI Sans)                                 │
+│    → Accessibility (WCAG AA contrast ratios)                           │
+│    👉 REFERENCE WHILE STYLING                                           │
+│                                                                          │
+│ 📊 SYSTEM_DIAGRAMS.md (994 lines, 61 KB)                               │
+│    → Class diagram (data model)                                        │
+│    → State diagram (faculty journey)                                   │
+│    → Sequence diagrams (workflow steps)                                │
+│    → Communication diagram (approval chain)                            │
+│    → Activity diagram (task completion)                                │
+│    → Deployment architecture                                           │
+│    → Entity relationship diagram                                       │
+│    👉 REFERENCE WHEN CONFUSED ABOUT WORKFLOW                            │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌─ REFERENCE & TEMPLATE DOCUMENTS ─────────────────────────────────────────┐
+│                                                                          │
+│ 📋 AGENT_QUICK_REFERENCE.md (538 lines, 14 KB)                         │
+│    → Golden rules checklist                                            │
+│    → Design tokens (copy-paste ready)                                  │
+│    → File structure                                                    │
+│    → Query layer reference                                             │
+│    → Component patterns (three-state, RoleGate, etc)                   │
+│    → Debugging checklist                                               │
+│    → Testing checklist                                                 │
+│    → Common mistakes to avoid                                          │
+│    👉 BOOKMARK THIS - Reference constantly while coding                │
+│                                                                          │
+│ 🔧 PAGE_BUILDING_TEMPLATE.md (701 lines, 25 KB)                        │
+│    → Template for assigning pages to builders                          │
+│    → Example: Faculty Dashboard (fully filled out)                     │
+│    → Instructions for customization                                    │
+│    → Build order guidance                                              │
+│    → Success criteria checklist                                        │
+│    👉 USE WHEN ASSIGNING PAGES TO TEAM MEMBERS                         │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌─ TROUBLESHOOTING & RECOVERY ─────────────────────────────────────────────┐
+│                                                                          │
+│ 🔄 AGENT_REHABILITATION_PROMPT.md (565 lines, 16 KB)                    │
+│    → For agents who hallucinated before                                │
+│    → What went wrong and why                                           │
+│    → 7 critical mistakes with code examples                            │
+│    → Step-by-step restart sequence                                     │
+│    → Verification checklist                                            │
+│    → New commandments for correct building                             │
+│    👉 USE ONLY IF RESTARTING OLD AGENT                                 │
+│                                                                          │
+│ 📑 00_DOCUMENTATION_COMPLETE.md (553 lines, 17 KB)                      │
+│    → Index of all documentation                                        │
+│    → How to use the package                                            │
+│    → Cross-references by topic                                         │
+│    → Implementation phases                                             │
+│    → Success criteria                                                  │
+│    👉 REFERENCE FOR NAVIGATION                                         │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                       BY ROLE - WHAT TO READ
+================================================================================
+
+🤖 AI AGENTS (Building Features)
+  Reading Order:
+    1. README_START_HERE.md (10 min)
+    2. MASTER_PROMPT_FOR_AGENTS.md (30 min)
+    3. DESIGN_SYSTEM_SETUP.md (20 min)
+    4. SYSTEM_DIAGRAMS.md (30 min)
+    5. AGENT_QUICK_REFERENCE.md (10 min)
+    6. implementation_plan.md (1+ hour as reference)
+  
+  Then reference while building:
+    - AGENT_QUICK_REFERENCE.md (patterns, debugging)
+    - DESIGN_SYSTEM_SETUP.md (colors, typography)
+    - SYSTEM_DIAGRAMS.md (workflows)
+
+👥 TEAM MEMBERS (Assigning Pages)
+  Must read:
+    1. README_START_HERE.md
+    2. MASTER_PROMPT_FOR_AGENTS.md (page map section)
+    3. PAGE_BUILDING_TEMPLATE.md
+  
+  Then:
+    - Fill out PAGE_BUILDING_TEMPLATE.md for your page
+    - Give to AI agent with MASTER_PROMPT
+
+📊 PROJECT MANAGERS
+  Quick review:
+    1. README_START_HERE.md
+    2. Skim MASTER_PROMPT_FOR_AGENTS.md (page map)
+    3. Reference 00_DOCUMENTATION_COMPLETE.md for navigation
+
+👀 CODE REVIEWERS
+  Use for verification:
+    1. AGENT_QUICK_REFERENCE.md (golden rules checklist)
+    2. DESIGN_SYSTEM_SETUP.md (styling rules)
+    3. SYSTEM_DIAGRAMS.md (workflow correctness)
+
+🆕 NEW AGENTS JOINING
+  Must read before coding:
+    1. README_START_HERE.md
+    2. MASTER_PROMPT_FOR_AGENTS.md
+    3. DESIGN_SYSTEM_SETUP.md
+    4. AGENT_QUICK_REFERENCE.md
+    5. implementation_plan.md
+
+================================================================================
+                       GOLDEN RULES (ABSOLUTE)
+================================================================================
+
+Every hallucination breaks one of these. Every correct implementation follows them.
+
+1. ZERO MOCK DATA
+   ❌ const mockTasks = [{id: 1, name: 'Task'}]
+   ✅ const tasks = await getUnstructuredTasks()
+
+2. THREE STATES ALWAYS
+   ❌ if (data) return <Component />
+   ✅ if (loading) return <LoadingSkeleton />
+      if (error) return <ErrorFallback />
+      if (empty) return <EmptyState />
+      return <Component />
+
+3. QUERY LAYER CENTRALIZATION
+   ❌ const res = await supabase.from('tasks').select('*')
+   ✅ const tasks = await getUnstructuredTasks()
+
+4. ROLE GATE WRAPPER
+   ❌ {user.role === 'HOD' && <ApprovalPanel />}
+   ✅ <RoleGate requiredPermission="APPROVE"><ApprovalPanel /></RoleGate>
+
+5. CSS TOKENS ONLY
+   ❌ className="bg-[#817AFF] text-[#F2E030]"
+   ✅ className="bg-primary text-foreground-dark"
+
+6. TYPE SAFE
+   ❌ function getData() { ... }
+   ✅ function getData(): Promise<Task[]> { ... }
+
+7. AUDIT IMMUTABLE
+   ✅ Every transaction logged in database + blockchain
+   ✅ No deletions (only soft deletes with reason)
+
+================================================================================
+                       DESIGN TOKENS (COPY-PASTE)
+================================================================================
+
+COLORS (One UI System):
+  Primary:    #817AFF    (purple for actions)
+  Secondary:  #844A87    (hover states)
+  Success:    #00C853    (approved)
+  Warning:    #FFC30C    (pending)
+  Error:      #FF3B30    (rejected)
+  Accent:     #00D4FF    (cyan highlights)
+
+TYPOGRAPHY:
+  Title:      36px 700 Bold
+  Heading:    24px 600 Semibold
+  Subtitle:   20px 700 Bold
+  Body:       14px 400 Regular
+  Caption:    12px 400 Regular
+  Font:       Variable One UI Sans
+
+SPACING (8px grid):
+  p-2=8px,    p-4=16px,   p-6=24px,   p-8=32px
+
+RADIUS:
+  Buttons:    8px (rounded-lg)
+  Cards:      12px (rounded-xl)
+  Modals:     20px (rounded-3xl)
+
+================================================================================
+                       QUICK REFERENCE COMMANDS
+================================================================================
+
+Navigation:
+  Start here:            README_START_HERE.md
+  Need page spec:        PAGE_BUILDING_TEMPLATE.md
+  Need design tokens:    AGENT_QUICK_REFERENCE.md → Design Tokens
+  Need architecture:     SYSTEM_DIAGRAMS.md
+  Need to debug:         AGENT_QUICK_REFERENCE.md → Debugging Checklist
+  Need to recover:       AGENT_REHABILITATION_PROMPT.md
+
+Coding:
+  Three-state pattern:   AGENT_QUICK_REFERENCE.md → Component Patterns
+  Query layer:           AGENT_QUICK_REFERENCE.md → Query Layer
+  RoleGate wrapper:      AGENT_QUICK_REFERENCE.md → Component Patterns
+  Color usage:           AGENT_QUICK_REFERENCE.md → Design Tokens
+  File structure:        AGENT_QUICK_REFERENCE.md → File Structure
+
+Verification:
+  Golden rules check:    AGENT_QUICK_REFERENCE.md → Golden Rules
+  Design check:          DESIGN_SYSTEM_SETUP.md
+  Workflow check:        SYSTEM_DIAGRAMS.md
+
+================================================================================
+                       SUCCESS CRITERIA
+================================================================================
+
+Your code is CORRECT when:
+  ✅ Zero mock data
+  ✅ Three states on every async component
+  ✅ All queries through lib/db/queries/
+  ✅ All role checks through RoleGate
+  ✅ All colors use CSS tokens
+  ✅ All typography matches spec
+  ✅ All spacing uses 8px grid
+  ✅ All workflows follow diagrams
+  ✅ Immutable audit trail
+
+Your code is WRONG when:
+  ❌ Contains hardcoded data arrays
+  ❌ Shows blank page while loading
+  ❌ Checks user.role in JSX
+  ❌ Uses hardcoded color values
+  ❌ Direct database access in components
+  ❌ Missing error handling
+  ❌ Missing audit logs
+
+================================================================================
+                       IMPLEMENTATION PHASES
+================================================================================
+
+Phase 1: Foundation
+  ✅ Architecture documented
+  ✅ Query layer specified
+  ✅ Design system defined
+
+Phase 2: Role Dashboards (NEXT)
+  □ DirectorDashboard
+  □ HodDashboard
+  □ FacultyDashboard
+  □ FinanceDashboard
+
+Phase 3: Task System
+  □ TaskPool page
+  □ NominationForm
+  □ TaskApprovalPanel
+
+Phase 4: Approval Workflows
+  □ AttendanceBatchApproval
+  □ SalaryTransferApproval
+  □ BlockchainIntegration
+
+Phase 5: Polish & Launch
+  □ Real-time notifications
+  □ Audit export
+  □ Performance optimization
+  □ Security hardening
+
+================================================================================
+                       CRITICAL WARNINGS
+================================================================================
+
+⚠️  DO NOT:
+    - Create mock data
+    - Skip loading/error states
+    - Check role in JSX (use RoleGate)
+    - Hardcode colors (use tokens)
+    - Access database directly (use query layer)
+    - Skip audit logging
+    - Deviate from specification
+
+⚠️  BEFORE CODING:
+    - Read all 5 core documents (2.5 hours)
+    - Bookmark AGENT_QUICK_REFERENCE.md
+    - Understand 7 Golden Rules
+    - Know the Three-State Pattern
+
+⚠️  IF CONFUSED:
+    - Check the relevant documentation section
+    - Re-read more carefully
+    - Reference the index above
+    - Almost every answer is already documented
+
+================================================================================
+                       FILE LOCATIONS
+================================================================================
+
+Documentation (Root):
+  ├── README_START_HERE.md
+  ├── MASTER_PROMPT_FOR_AGENTS.md
+  ├── DESIGN_SYSTEM_SETUP.md
+  ├── SYSTEM_DIAGRAMS.md
+  ├── AGENT_QUICK_REFERENCE.md
+  ├── PAGE_BUILDING_TEMPLATE.md
+  ├── AGENT_REHABILITATION_PROMPT.md
+  ├── 00_DOCUMENTATION_COMPLETE.md
+  ├── DOCUMENTATION_INDEX.txt (this file)
+  └── implementation_plan.md
+
+Code:
+  ├── /app (Next.js application)
+  ├── /components (React components)
+  ├── /lib/db/queries (Query layer - CENTRAL)
+  ├── /types (TypeScript types)
+  ├── /styles (CSS and design tokens)
+  └── /public/fonts (One UI Sans font)
+
+================================================================================
+                       FINAL REMINDER
+================================================================================
+
+This documentation package is:
+  ✅ Complete (3,700+ lines)
+  ✅ Comprehensive (every detail specified)
+  ✅ Unambiguous (no guessing required)
+  ✅ Production-Ready (ready to build)
+  ✅ Team-Friendly (roles have separate guides)
+  ✅ Mistake-Proof (if you follow it)
+
+There is NO EXCUSE for hallucination now.
+
+READ EVERYTHING.
+FOLLOW EXACTLY.
+BUILD CORRECTLY.
+
+The project will succeed or fail based on adherence to these documents.
+
+================================================================================
+                       START HERE
+================================================================================
+
+👉 Open: README_START_HERE.md
+
+Then read in order:
+  1. MASTER_PROMPT_FOR_AGENTS.md (30 min)
+  2. DESIGN_SYSTEM_SETUP.md (20 min)
+  3. AGENT_QUICK_REFERENCE.md (10 min)
+  4. SYSTEM_DIAGRAMS.md (30 min)
+
+Total: 90 minutes before coding
+
+Then reference:
+  - AGENT_QUICK_REFERENCE.md (while coding)
+  - DESIGN_SYSTEM_SETUP.md (for colors/typography)
+  - SYSTEM_DIAGRAMS.md (for workflows)
+
+================================================================================
+                    Production Ready: July 8, 2026
+                        Version: 1.0
+================================================================================
