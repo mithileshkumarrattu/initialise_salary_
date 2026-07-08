@@ -1,7 +1,6 @@
 'use client';
 
 import { AlertCircle, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface ErrorFallbackProps {
   message: string;
@@ -18,15 +17,13 @@ export function ErrorFallback({ message, onRetry, title = 'Error' }: ErrorFallba
           <h3 className="font-semibold text-foreground">{title}</h3>
           <p className="text-sm text-muted-foreground mt-1">{message}</p>
           {onRetry && (
-            <Button 
+            <button 
               onClick={onRetry} 
-              variant="outline" 
-              size="sm"
-              className="mt-4 gap-2"
+              className="mt-4 flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium border border-border rounded-lg bg-background hover:bg-muted text-foreground transition"
             >
               <RotateCcw className="h-4 w-4" />
               Try again
-            </Button>
+            </button>
           )}
         </div>
       </div>

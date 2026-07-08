@@ -1,99 +1,58 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { getPendingApprovals } from '@/lib/db/queries/approvals';
+import ApprovalsClient from '@/components/approvals/ApprovalsClient';
+import { AlertCircle } from 'lucide-react';
+import RoleGate from '@/components/common/RoleGate';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { ErrorFallback } from '@/components/common/ErrorFallback';
-import { EmptyState } from '@/components/common/EmptyState';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { usePermissions } from '@/lib/hooks/usePermissions';
-import { RoleGate } from '@/components/layout/RoleGate';
+export default async function ApprovalsPage() {
+  const supabase = await createClient();
 
-/**
- * APPROVALS PAGE
- * 
- * Purpose: Central approval hub for HODs and Finance roles
- * 
- * Permissions:
- * - HOD: Can approve attendance, task completions, and salary transfer requests within their department
- * - Finance: Can approve all token transfers and view all transactions
- * - Others: No access (403)
- * 
- * Data Fetching Pattern:
- * 1. Fetch current user + role
- * 2. Based on role, fetch relevant approvals (attendance, tasks, salary transfers)
- * 3. Display in role-specific sections
- * 4. On approve/deny action, trigger API call to update DB + smart contract (if tokens)
- * 5. Refetch data or subscribe to real-time updates
- * 
- * TODO: Build role-specific approval components
- */
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) redirect('/login');
 
-export default function ApprovalsPage() {
-  const router = useRouter();
-  const { user, role, loading: authLoading } = useAuth();
-  const { hasPermission, loading: permLoading } = usePermissions();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [approvalData, setApprovalData] = useState<any>(null);
+  const { data: profile, error: profileError } = await supabase
+    .from('users')
+    .select('role, department_id')
+    .eq('id', user.id)
+    .single();
 
-  // Check if user has permission to view approvals
-  const canAccess = role === 'HOD' || role === 'FINANCE';
+  if (profileError || !profile) {
+    return (
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="w-12 h-12 text-error mb-4" />
+        <h2 className="text-xl font-bold">Profile Error</h2>
+        <p className="text-muted-foreground mt-2">Could not verify permissions.</p>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (authLoading || permLoading) return;
-
-    if (!user || !canAccess) {
-      router.push('/dashboard');
-      return;
-    }
-
-    const fetchApprovals = async () => {
-      try {
-        setLoading(true);
-        // TODO: Fetch approvals based on role
-        // const data = await getApprovalsForRole(role, user.id);
-        // setApprovalData(data);
-        setApprovalData(null); // Blank until query implemented
-      } catch (err: any) {
-        setError(err.message || 'Failed to load approvals');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchApprovals();
-  }, [user, role, authLoading, permLoading, router, canAccess]);
-
-  if (authLoading || permLoading) return <LoadingSkeleton />;
-  if (error) return <ErrorFallback message={error} />;
+  let approvals = [];
+  try {
+    approvals = await getPendingApprovals(profile.role, profile.department_id);
+  } catch (err) {
+    console.error("Failed to load approvals:", err);
+    return (
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="w-12 h-12 text-error mb-4" />
+        <h2 className="text-xl font-bold">Failed to load approvals</h2>
+        <p className="text-muted-foreground mt-2 text-center max-w-md">There was a problem communicating with the database.</p>
+      </div>
+    );
+  }
 
   return (
-    <RoleGate requiredPermission="APPROVE_TASKS">
-      <div className="space-y-6 p-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Approvals</h1>
-          <p className="text-muted-foreground mt-1">
-            Review and approve pending tasks, attendance, and salary transfers
-          </p>
-        </div>
-
-        {loading ? (
-          <LoadingSkeleton />
-        ) : !approvalData ? (
-          <EmptyState
-            title="No Approvals"
-            description="All approvals are up to date. Check back later."
-          />
-        ) : (
-          <div className="space-y-6">
-            {/* TODO: Add role-specific approval sections here */}
-            {/* e.g., <AttendanceApprovals data={approvalData.attendance} /> */}
-            {/* e.g., <TaskApprovals data={approvalData.tasks} /> */}
-            {/* e.g., <SalaryTransferApprovals data={approvalData.salaryTransfers} /> */}
-          </div>
-        )}
+    <div className="container mx-auto py-6 px-4 lg:px-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Approvals</h1>
+        <p className="text-sm text-muted-foreground mt-1">Review and manage pending requests.</p>
       </div>
-    </RoleGate>
+
+      {/* RoleGate explicitly blocks regular faculty from seeing this entirely, though the Sidebar already hides the link */}
+      <RoleGate allowedRoles={['hod', 'director', 'admin', 'finance', 'manager', 'hr_admin']}>
+        <ApprovalsClient approvals={approvals} />
+      </RoleGate>
+    </div>
   );
 }
