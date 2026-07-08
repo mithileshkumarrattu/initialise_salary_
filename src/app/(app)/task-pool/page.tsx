@@ -1,35 +1,69 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+/**
+ * Task Pool Page - Unstructured Task Board
+ * 
+ * This page shows:
+ * - Available tasks to nominate for (OPEN status)
+ * - Task nomination form
+ * - Filters by priority, department, etc.
+ * 
+ * Data fetching:
+ * - getAvailableTasksForNomination(departmentId)
+ * 
+ * Data mutation:
+ * - Create nomination record when user self-nominates
+ */
+
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
+import { ErrorFallback } from '@/components/common/ErrorFallback';
+import { EmptyState } from '@/components/common/EmptyState';
 
 export default function TaskPoolPage() {
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: userLoading } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const supabase = createClient();
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        window.location.href = "/login";
-        return;
+    const loadData = async () => {
+      if (!user || userLoading) return;
+
+      try {
+        setLoading(true);
+        // TODO: Fetch available tasks for nomination
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load task pool');
+      } finally {
+        setLoading(false);
       }
-      setUser(user);
-      setLoading(false);
     };
 
-    fetchUser();
-  }, []);
+    loadData();
+  }, [user, userLoading]);
 
-  if (loading) return <div className="p-8 text-muted-foreground">Loading...</div>;
+  if (userLoading || loading) return <LoadingSkeleton />;
+  if (error) return <ErrorFallback message={error} onRetry={() => window.location.reload()} />;
 
   return (
-    <div className="p-8 space-y-4">
-      <h1 className="text-2xl font-bold text-foreground">Task Pool</h1>
-      <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
-        <p className="text-sm text-muted-foreground">This page was rebuilt from scratch. Connect your database logic here.</p>
+    <main className="flex-1 overflow-y-auto">
+      <div className="container mx-auto py-6 px-4 lg:px-6">
+        <h1 className="text-3xl font-bold text-foreground mb-6">Task Pool</h1>
+        
+        <div className="space-y-6">
+          {/* Filter bar */}
+          <div className="flex gap-4">
+            {/* TODO: Add priority filter, department filter, etc. */}
+          </div>
+
+          {/* Task board */}
+          <section>
+            <EmptyState message="No tasks available to nominate" />
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
