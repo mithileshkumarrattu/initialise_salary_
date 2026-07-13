@@ -1,0 +1,356 @@
+# WorkToken Platform — Work Token SaaS for Institutions
+
+> **Status**: Phase 1 COMPLETE ✓ | **Ready for**: Phase 2 Team Development
+
+## What Is This?
+
+A comprehensive **token-based work accounting system** that makes all work visible and ties compensation directly to verified output.
+
+**Problem**: In universities and enterprises, invisible work is everywhere. Salaries are fixed contracts with no correlation to actual productivity.
+
+**Solution**: Every piece of work (teaching, organizing tasks, mentoring) is tracked, verified, and rewarded with ERC-20 tokens. Salary transfer only happens when progress threshold is reached (85%+). All transactions are immutable blockchain records.
+
+**Result**: Fair, transparent, data-driven compensation. Faculty see exactly what they're being paid for.
+
+---
+
+## For Team Members: Quick Start
+
+You just joined the team? Here's the exact reading order:
+
+1. **Read First** (5 min): This file (README.md)
+2. **Read Next** (30 min): `.context/productContext.md` — understand the problem we're solving
+3. **Read Then** (45 min): `implementation_plan.md` — full technical specification (1100+ lines, complete story)
+4. **Reference**: `DEVELOPMENT.md` — copy-paste template for building components
+5. **Reference**: `.context/systemPatterns.md` — architecture rules to follow
+6. **Check Status**: `.context/progress.md` — what's done, what's next
+7. **Current Work**: `.context/activeContext.md` — what to work on today
+
+---
+
+## Project Structure
+
+```
+src/app/
+├── (auth)/login, /signup         # Public auth pages
+├── (app)/dashboard               # Single role-aware dashboard route
+│   ├── /my-work, /task-pool, /team, /finance, /approvals
+│   └── layout.tsx                # Auth middleware
+└── api/                           # Backend endpoints (not yet built)
+
+src/lib/
+├── db/queries/                    # ALL database access (32 functions organized by entity)
+├── hooks/                         # useAuth, usePermissions, useRole
+├── supabase/                      # Supabase clients + middleware
+└── utils/                         # Helpers
+
+src/components/
+├── layout/                        # AppSidebar, RoleGate, etc.
+├── dashboard/                     # Role-specific dashboard shells
+├── common/                        # LoadingSkeleton, ErrorFallback, RoleGate
+└── ui/                            # shadcn/ui base components
+
+Design System:
+├── globals.css                    # 40+ CSS tokens (colors, spacing, typography)
+└── All styling via CSS variables (no hardcoded colors)
+```
+
+---
+
+## Golden Rules (MUST FOLLOW)
+
+1. **Zero Mock Data** — All components fetch from Supabase. No hardcoded lists.
+2. **Three States Always** — Loading → Error → Success for every async component.
+3. **Query Layer Only** — All DB access through `lib/db/queries/`, never direct Supabase calls.
+4. **RoleGate Wrapper** — Any restricted feature must be wrapped in `<RoleGate>`.
+5. **CSS Tokens Only** — No hardcoded colors. Use `hsl(var(--primary))`.
+6. **Type Safe** — TypeScript everywhere. No `any` types without reason.
+7. **Audit Trail** — Every transaction logged & immutable (blockchain eventually).
+
+---
+
+## Architecture Decision: Single `/dashboard` Route
+
+All roles (Director, HOD, Faculty, Finance) use the same URL `/dashboard`. The page detects role and shows role-specific content.
+
+**Why**: Simplifies auth, centralizes permission logic, no route collisions.
+
+```tsx
+// One page, four dashboards
+if (role === 'DIRECTOR') return <DirectorDashboard />;
+if (role === 'HOD') return <HodDashboard />;
+if (role === 'FACULTY') return <FacultyDashboard />;
+if (role === 'FINANCE') return <FinanceDashboard />;
+```
+
+---
+
+## Development Pattern (Three-State Template)
+
+Every component that fetches data follows this pattern:
+
+```tsx
+'use client';
+import { useEffect, useState } from 'react';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
+import { ErrorFallback } from '@/components/common/ErrorFallback';
+import { getDataFromDatabase } from '@/lib/db/queries/entity';
+
+export default function MyComponent() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        setLoading(true);
+        const result = await getDataFromDatabase();
+        setData(result);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  if (loading) return <LoadingSkeleton />;
+  if (error) return <ErrorFallback message={error} />;
+  if (!data) return <div>No data</div>;
+
+  return <div>{/* Render with live data */}</div>;
+}
+```
+
+**Copy this template for every new component.**
+
+---
+
+## Phase 1 Deliverables ✓
+
+- [x] Architecture defined (single dashboard route, role-based routing)
+- [x] Design system implemented (CSS tokens for colors, typography, spacing)
+- [x] Database query layer (32 functions in lib/db/queries/)
+- [x] Base components (LoadingSkeleton, ErrorFallback, RoleGate, useAuth hooks)
+- [x] Page shells (dashboard, my-work, task-pool, team, finance, approvals)
+- [x] Comprehensive documentation (implementation_plan.md 1100+ lines + DEVELOPMENT.md)
+- [x] Context files (.context/ folder with activeContext, progress, systemPatterns, productContext)
+- [x] Codebase cleanup (removed old mock pages, reorganized structure)
+
+---
+
+## Phase 2: What To Build Next
+
+### Build Role Dashboards
+
+Each role needs a dashboard component that fetches and displays role-specific data:
+
+- **DirectorDashboard**: Org stats, dept progress heatmap
+- **HodDashboard**: Faculty progress list, approval queue
+- **FacultyDashboard**: Progress ring, today's classes, nominate tasks button
+- **FinanceDashboard**: All faculty token balances, release salary form
+
+Each dashboard should:
+1. Fetch its data using query functions from `lib/db/queries/`
+2. Handle three states (loading, error, success)
+3. Display real data on the page
+4. NOT have any mock data
+
+### Example (HodDashboard)
+
+```tsx
+'use client';
+import { useEffect, useState } from 'react';
+import { getDepartmentStats } from '@/lib/db/queries/organizations';
+import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
+import { ErrorFallback } from '@/components/common/ErrorFallback';
+import { RoleGate } from '@/components/layout/RoleGate';
+
+export default function HodDashboard() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data = await getDepartmentStats(userDeptId);
+        setStats(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  return (
+    <RoleGate requiredPermission="APPROVE_TASKS">
+      {loading ? <LoadingSkeleton /> : error ? <ErrorFallback message={error} /> : (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold">Department Dashboard</h1>
+          {/* Render stats.faculty list, show progress % for each */}
+          {/* Render approval queue */}
+        </div>
+      )}
+    </RoleGate>
+  );
+}
+```
+
+---
+
+## Design System (Comprehensive)
+
+### Colors (CSS Tokens in globals.css)
+
+```css
+--primary: 7 89% 53%;         /* Purple (#6d28d9) */
+--success: 142 76% 36%;       /* Green */
+--warning: 38 92% 50%;        /* Amber */
+--error: 0 84% 60%;           /* Red */
+--background: 0 0% 100%;      /* White */
+--foreground: 224 71% 4%;     /* Dark text */
+```
+
+### Typography
+
+- **Body**: Inter, 14px, 1.5 line-height
+- **Headings**: Inter 700, 24-30px
+- **Labels**: Inter 600, 14px
+
+### Spacing
+
+- 8px base grid (p-2 = 8px, p-4 = 16px, p-6 = 24px)
+- Gap classes for flexbox (gap-4 = 16px)
+
+### Components
+
+- Buttons: rounded, 8px padding, primary color
+- Cards: border + shadow, 8px radius
+- Inputs: full-width, 8px padding, border on focus
+
+**Reference**: See `src/app/globals.css` for complete CSS token definitions.
+
+---
+
+## Key Files & What They Contain
+
+| File | What | Who Should Read |
+|------|------|---|
+| `implementation_plan.md` | Complete spec, story, schema, patterns | Everyone (MUST READ) |
+| `DEVELOPMENT.md` | Three-state pattern, debugging guide, templates | Everyone (reference) |
+| `.context/productContext.md` | Why we're building this, use cases, risks | Product decisions |
+| `.context/systemPatterns.md` | Architecture rules, naming conventions, error handling | Backend developers |
+| `.context/progress.md` | What's done, what's next, blockers | Project leads |
+| `.context/activeContext.md` | What to work on today | Developers starting |
+| `src/lib/db/queries/` | All DB access functions (32 functions) | When adding features |
+| `src/components/` | Base components to reuse | When building UI |
+
+---
+
+## Common Questions
+
+### "Do I need to connect to Supabase?"
+
+No, not yet. The query functions are ready to go. Just update `.env.development.local` with your Supabase credentials when you're ready to fetch real data. For now, queries will throw "no connection" errors — that's fine, it's caught by our error handler.
+
+### "Should I use mock data while developing?"
+
+**NO**. Resist the temptation. Build with empty states instead:
+- Loading state (spinner)
+- Error state (show error message)
+- Empty state (no data found)
+- Success state (show data)
+
+When DB is ready, you just swap the query function. No refactoring needed.
+
+### "What if I need a new query function?"
+
+Add it to `lib/db/queries/[entity].ts`. Follow the pattern:
+1. Use Supabase client
+2. Select what you need (don't use *)
+3. Throw error if query fails
+4. Return data or empty array
+
+### "How do I check permissions?"
+
+Wrap the component in `RoleGate`:
+```tsx
+<RoleGate requiredPermission="APPROVE_SALARY_TRANSFER">
+  <SalaryTransferButton />
+</RoleGate>
+```
+
+Or use the hook:
+```tsx
+const { hasPermission } = usePermissions();
+if (!hasPermission('APPROVE_SALARY_TRANSFER')) return <AccessDenied />;
+```
+
+---
+
+## For Your Team Lead
+
+**Success Criteria for Phase 2**:
+- [ ] All 4 role dashboards built with real data (no mock)
+- [ ] All dashboards handle loading/error/success states
+- [ ] Design system applied (buttons, cards, spacing consistent)
+- [ ] No hardcoded data anywhere
+- [ ] All restricted features wrapped in RoleGate
+- [ ] API endpoints for dashboard data (connect DB queries to HTTP routes)
+- [ ] Team members understand the three-state pattern cold
+- [ ] New code PRs all follow golden rules
+
+---
+
+## Deployment
+
+### Local Development
+
+```bash
+npm install
+cp .env.example .env.development.local
+# Add your Supabase URL & keys
+npm run dev
+```
+
+### Production
+
+```bash
+# Vercel
+vercel deploy
+
+# Env vars added via Vercel dashboard (Dashboard Secrets)
+```
+
+---
+
+## Support & Questions
+
+If you're stuck:
+
+1. **Check DEVELOPMENT.md** for the three-state pattern
+2. **Check .context/systemPatterns.md** for architecture rules
+3. **Look at lib/db/queries/** to see how other queries are written
+4. **Check components/common/** to see error handling patterns
+
+If still stuck: Check with the team lead. Document the solution so others learn.
+
+---
+
+## Final Note
+
+This codebase is built for **team development**. Every file is documented. Every pattern is explained. Every rule is explicit. No surprises.
+
+Read `implementation_plan.md`. It's your Bible. Refer to it constantly.
+
+Welcome to the team. Let's build something fair.
+
+---
+
+**Questions?** Reference the files above. Answers are there.
+
