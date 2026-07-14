@@ -28,8 +28,8 @@ export default async function ProfilePage() {
   }
 
   // Fetch stats and activity
-  let stats;
-  let activity = [];
+  let stats: any;
+  let activity: any[] = [];
   try {
     stats = await getUserProfileStats(user.id);
     activity = await getUserRecentActivity(user.id);

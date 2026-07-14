@@ -54,7 +54,7 @@ export async function getUserPermissions(userId: string) {
 
   if (permError) throw new Error(`Failed to fetch permissions: ${permError.message}`);
   
-  return permissions?.map(p => p.permission?.name).filter(Boolean) || [];
+  return permissions?.map((p: any) => p.permission?.name).filter(Boolean) || [];
 }
 
 /**
