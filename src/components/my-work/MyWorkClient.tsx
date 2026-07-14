@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, MoreHorizontal, CheckCircle2, Clock, AlertCircle, ArrowUpDown } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, CheckCircle2, Clock, AlertCircle, ArrowUpDown, Award } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function MyWorkClient({ tasks }: { tasks: any[] }) {

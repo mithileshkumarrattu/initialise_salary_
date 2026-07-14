@@ -77,15 +77,17 @@ export async function getUserFinanceData(userId: string): Promise<FinanceData> {
     .eq('status', 'COMPLETED');
 
   if (!taskError && completedTasks) {
-    completedTasks.forEach(t => {
-      transactions.push({
-        id: t.id,
-        type: 'CREDIT',
-        title: 'Task Reward',
-        description: `Completed: ${t.task.title}`,
-        amount: Number(t.task.token_value),
-        date: t.updated_at
-      });
+    completedTasks.forEach((t: any) => {
+      if (t.task && Array.isArray(t.task) && t.task.length > 0) {
+        transactions.push({
+          id: t.id,
+          type: 'CREDIT',
+          title: 'Task Reward',
+          description: `Completed: ${t.task[0]?.title || 'Task'}`,
+          amount: Number(t.task[0]?.token_value || 0),
+          date: t.updated_at
+        });
+      }
     });
   }
 
