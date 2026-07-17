@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getCurrentUser } from '@/lib/db/queries/users';
 import { useAuth } from './useAuth';
+import { createClient } from '@/lib/supabase/client';
 
-type UserRole = 'DIRECTOR' | 'HOD' | 'FACULTY' | 'FINANCE' | 'EMPLOYEE' | 'MANAGER' | 'HR_ADMIN' | null;
+type UserRole = 'admin' | 'director' | 'hod' | 'faculty' | 'finance' | null;
 
 export function useRole() {
   const { user, loading: authLoading } = useAuth();
@@ -18,11 +18,19 @@ export function useRole() {
 
       try {
         setLoading(true);
-        const userData = await getCurrentUser(user.id);
+        const supabase = createClient();
         
-        // Map role_id to role name - this is a simplified example
-        // In real app, you'd fetch from roles table
-        setRole(null); // Will be populated from DB data
+        // Fetch user profile with role field
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (userError) throw userError;
+        
+        const userRole = userData?.role?.toLowerCase() as UserRole;
+        setRole(userRole || null);
         setError(null);
       } catch (err: any) {
         console.error('[v0] Failed to fetch role:', err);
@@ -33,16 +41,16 @@ export function useRole() {
       }
     };
 
-    if (!authLoading) {
+    if (!authLoading && user) {
       fetchRole();
     }
   }, [user, authLoading]);
 
-  const isDirector = role === 'DIRECTOR';
-  const isHod = role === 'HOD';
-  const isFaculty = role === 'FACULTY';
-  const isFinance = role === 'FINANCE';
-  const isManager = role === 'MANAGER';
+  const isDirector = role === 'director';
+  const isHod = role === 'hod';
+  const isFaculty = role === 'faculty';
+  const isFinance = role === 'finance';
+  const isAdmin = role === 'admin';
 
   return {
     role,
@@ -50,7 +58,7 @@ export function useRole() {
     isHod,
     isFaculty,
     isFinance,
-    isManager,
+    isAdmin,
     loading,
     error,
   };

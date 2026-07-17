@@ -41,11 +41,6 @@ const NAV_BY_ROLE: Record<string, { href: string; label: string; icon: any }[]> 
   ],
   admin: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/my-work", label: "My Work", icon: Briefcase },
-    { href: "/task-pool", label: "Task Pool", icon: ListTodo },
-    { href: "/approvals", label: "Approvals", icon: CheckSquare },
-    { href: "/team", label: "Team", icon: Users },
-    { href: "/finance", label: "Finance", icon: Wallet },
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/audit", label: "Audit Log", icon: Shield },
   ],
@@ -83,7 +78,9 @@ export default function AppSidebar({ role, userName, userEmail }: AppSidebarProp
   const router = useRouter();
   const supabase = createClient();
 
-  const navItems = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.employee;
+  // Normalize role to lowercase for lookup
+  const normalizedRole = (role ?? 'employee').toLowerCase();
+  const navItems = NAV_BY_ROLE[normalizedRole] ?? NAV_BY_ROLE.faculty;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
