@@ -1,356 +1,241 @@
-# WorkToken Platform — Work Token SaaS for Institutions
+# WorkToken SaaS Platform - Faculty Productivity & Token Rewarding
 
-> **Status**: Phase 1 COMPLETE ✓ | **Ready for**: Phase 2 Team Development
+## 🎯 What This Is
 
-## What Is This?
+A **work accountability platform for academic institutions** where:
+- **Directors** oversee token circulation across departments
+- **HODs** approve work progress and manage their department
+- **Faculty** track their work, earn tokens, and request salary transfers
+- **Finance** controls the final salary release trigger
 
-A comprehensive **token-based work accounting system** that makes all work visible and ties compensation directly to verified output.
-
-**Problem**: In universities and enterprises, invisible work is everywhere. Salaries are fixed contracts with no correlation to actual productivity.
-
-**Solution**: Every piece of work (teaching, organizing tasks, mentoring) is tracked, verified, and rewarded with ERC-20 tokens. Salary transfer only happens when progress threshold is reached (85%+). All transactions are immutable blockchain records.
-
-**Result**: Fair, transparent, data-driven compensation. Faculty see exactly what they're being paid for.
+Token-based system: Faculty complete structured (timetable) + unstructured (special tasks) work → earn WORK tokens → request salary when ≥85% progress → Finance approves batch reversal → Salary released.
 
 ---
 
-## For Team Members: Quick Start
+## 📦 Current Project Status
 
-You just joined the team? Here's the exact reading order:
+### ✅ COMPLETED
+1. **4 Complete Role-Based Dashboards**
+   - Faculty Dashboard: 82% progress ring, token balance, schedule, active commitments
+   - HOD Dashboard: Department stats, heatmap, approvals, loan tracking
+   - Director Dashboard: Institution-wide KPIs, token circulation, loan management
+   - Finance Dashboard: Salary control, faculty readiness, audit log
 
-1. **Read First** (5 min): This file (README.md)
-2. **Read Next** (30 min): `.context/productContext.md` — understand the problem we're solving
-3. **Read Then** (45 min): `implementation_plan.md` — full technical specification (1100+ lines, complete story)
-4. **Reference**: `DEVELOPMENT.md` — copy-paste template for building components
-5. **Reference**: `.context/systemPatterns.md` — architecture rules to follow
-6. **Check Status**: `.context/progress.md` — what's done, what's next
-7. **Current Work**: `.context/activeContext.md` — what to work on today
+2. **Authentication & Routing**
+   - Supabase auth integration
+   - Role-based navigation sidebar
+   - Protected app layout
 
----
+3. **Project Cleanup**
+   - Removed 30+ redundant .md documentation files
+   - Removed 8 old/duplicate dashboard components
+   - Clean, focused codebase
 
-## Project Structure
-
-```
-src/app/
-├── (auth)/login, /signup         # Public auth pages
-├── (app)/dashboard               # Single role-aware dashboard route
-│   ├── /my-work, /task-pool, /team, /finance, /approvals
-│   └── layout.tsx                # Auth middleware
-└── api/                           # Backend endpoints (not yet built)
-
-src/lib/
-├── db/queries/                    # ALL database access (32 functions organized by entity)
-├── hooks/                         # useAuth, usePermissions, useRole
-├── supabase/                      # Supabase clients + middleware
-└── utils/                         # Helpers
-
-src/components/
-├── layout/                        # AppSidebar, RoleGate, etc.
-├── dashboard/                     # Role-specific dashboard shells
-├── common/                        # LoadingSkeleton, ErrorFallback, RoleGate
-└── ui/                            # shadcn/ui base components
-
-Design System:
-├── globals.css                    # 40+ CSS tokens (colors, spacing, typography)
-└── All styling via CSS variables (no hardcoded colors)
-```
+### 🚧 TODO (Next Phase)
+1. Database schema validation (Supabase tables)
+2. API endpoints for each role dashboard
+3. Data fetching with SWR hooks
+4. Other pages: My Work, Task Pool, Approvals, Team, Settings
+5. Action handlers: Mark attendance, submit transfers, approve requests
 
 ---
 
-## Golden Rules (MUST FOLLOW)
+## 🚀 Quick Start
 
-1. **Zero Mock Data** — All components fetch from Supabase. No hardcoded lists.
-2. **Three States Always** — Loading → Error → Success for every async component.
-3. **Query Layer Only** — All DB access through `lib/db/queries/`, never direct Supabase calls.
-4. **RoleGate Wrapper** — Any restricted feature must be wrapped in `<RoleGate>`.
-5. **CSS Tokens Only** — No hardcoded colors. Use `hsl(var(--primary))`.
-6. **Type Safe** — TypeScript everywhere. No `any` types without reason.
-7. **Audit Trail** — Every transaction logged & immutable (blockchain eventually).
-
----
-
-## Architecture Decision: Single `/dashboard` Route
-
-All roles (Director, HOD, Faculty, Finance) use the same URL `/dashboard`. The page detects role and shows role-specific content.
-
-**Why**: Simplifies auth, centralizes permission logic, no route collisions.
-
-```tsx
-// One page, four dashboards
-if (role === 'DIRECTOR') return <DirectorDashboard />;
-if (role === 'HOD') return <HodDashboard />;
-if (role === 'FACULTY') return <FacultyDashboard />;
-if (role === 'FINANCE') return <FinanceDashboard />;
-```
-
----
-
-## Development Pattern (Three-State Template)
-
-Every component that fetches data follows this pattern:
-
-```tsx
-'use client';
-import { useEffect, useState } from 'react';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { ErrorFallback } from '@/components/common/ErrorFallback';
-import { getDataFromDatabase } from '@/lib/db/queries/entity';
-
-export default function MyComponent() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        const result = await getDataFromDatabase();
-        setData(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, []);
-
-  if (loading) return <LoadingSkeleton />;
-  if (error) return <ErrorFallback message={error} />;
-  if (!data) return <div>No data</div>;
-
-  return <div>{/* Render with live data */}</div>;
-}
-```
-
-**Copy this template for every new component.**
-
----
-
-## Phase 1 Deliverables ✓
-
-- [x] Architecture defined (single dashboard route, role-based routing)
-- [x] Design system implemented (CSS tokens for colors, typography, spacing)
-- [x] Database query layer (32 functions in lib/db/queries/)
-- [x] Base components (LoadingSkeleton, ErrorFallback, RoleGate, useAuth hooks)
-- [x] Page shells (dashboard, my-work, task-pool, team, finance, approvals)
-- [x] Comprehensive documentation (implementation_plan.md 1100+ lines + DEVELOPMENT.md)
-- [x] Context files (.context/ folder with activeContext, progress, systemPatterns, productContext)
-- [x] Codebase cleanup (removed old mock pages, reorganized structure)
-
----
-
-## Phase 2: What To Build Next
-
-### Build Role Dashboards
-
-Each role needs a dashboard component that fetches and displays role-specific data:
-
-- **DirectorDashboard**: Org stats, dept progress heatmap
-- **HodDashboard**: Faculty progress list, approval queue
-- **FacultyDashboard**: Progress ring, today's classes, nominate tasks button
-- **FinanceDashboard**: All faculty token balances, release salary form
-
-Each dashboard should:
-1. Fetch its data using query functions from `lib/db/queries/`
-2. Handle three states (loading, error, success)
-3. Display real data on the page
-4. NOT have any mock data
-
-### Example (HodDashboard)
-
-```tsx
-'use client';
-import { useEffect, useState } from 'react';
-import { getDepartmentStats } from '@/lib/db/queries/organizations';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
-import { ErrorFallback } from '@/components/common/ErrorFallback';
-import { RoleGate } from '@/components/layout/RoleGate';
-
-export default function HodDashboard() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await getDepartmentStats(userDeptId);
-        setStats(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, []);
-
-  return (
-    <RoleGate requiredPermission="APPROVE_TASKS">
-      {loading ? <LoadingSkeleton /> : error ? <ErrorFallback message={error} /> : (
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold">Department Dashboard</h1>
-          {/* Render stats.faculty list, show progress % for each */}
-          {/* Render approval queue */}
-        </div>
-      )}
-    </RoleGate>
-  );
-}
-```
-
----
-
-## Design System (Comprehensive)
-
-### Colors (CSS Tokens in globals.css)
-
-```css
---primary: 7 89% 53%;         /* Purple (#6d28d9) */
---success: 142 76% 36%;       /* Green */
---warning: 38 92% 50%;        /* Amber */
---error: 0 84% 60%;           /* Red */
---background: 0 0% 100%;      /* White */
---foreground: 224 71% 4%;     /* Dark text */
-```
-
-### Typography
-
-- **Body**: Inter, 14px, 1.5 line-height
-- **Headings**: Inter 700, 24-30px
-- **Labels**: Inter 600, 14px
-
-### Spacing
-
-- 8px base grid (p-2 = 8px, p-4 = 16px, p-6 = 24px)
-- Gap classes for flexbox (gap-4 = 16px)
-
-### Components
-
-- Buttons: rounded, 8px padding, primary color
-- Cards: border + shadow, 8px radius
-- Inputs: full-width, 8px padding, border on focus
-
-**Reference**: See `src/app/globals.css` for complete CSS token definitions.
-
----
-
-## Key Files & What They Contain
-
-| File | What | Who Should Read |
-|------|------|---|
-| `implementation_plan.md` | Complete spec, story, schema, patterns | Everyone (MUST READ) |
-| `DEVELOPMENT.md` | Three-state pattern, debugging guide, templates | Everyone (reference) |
-| `.context/productContext.md` | Why we're building this, use cases, risks | Product decisions |
-| `.context/systemPatterns.md` | Architecture rules, naming conventions, error handling | Backend developers |
-| `.context/progress.md` | What's done, what's next, blockers | Project leads |
-| `.context/activeContext.md` | What to work on today | Developers starting |
-| `src/lib/db/queries/` | All DB access functions (32 functions) | When adding features |
-| `src/components/` | Base components to reuse | When building UI |
-
----
-
-## Common Questions
-
-### "Do I need to connect to Supabase?"
-
-No, not yet. The query functions are ready to go. Just update `.env.development.local` with your Supabase credentials when you're ready to fetch real data. For now, queries will throw "no connection" errors — that's fine, it's caught by our error handler.
-
-### "Should I use mock data while developing?"
-
-**NO**. Resist the temptation. Build with empty states instead:
-- Loading state (spinner)
-- Error state (show error message)
-- Empty state (no data found)
-- Success state (show data)
-
-When DB is ready, you just swap the query function. No refactoring needed.
-
-### "What if I need a new query function?"
-
-Add it to `lib/db/queries/[entity].ts`. Follow the pattern:
-1. Use Supabase client
-2. Select what you need (don't use *)
-3. Throw error if query fails
-4. Return data or empty array
-
-### "How do I check permissions?"
-
-Wrap the component in `RoleGate`:
-```tsx
-<RoleGate requiredPermission="APPROVE_SALARY_TRANSFER">
-  <SalaryTransferButton />
-</RoleGate>
-```
-
-Or use the hook:
-```tsx
-const { hasPermission } = usePermissions();
-if (!hasPermission('APPROVE_SALARY_TRANSFER')) return <AccessDenied />;
-```
-
----
-
-## For Your Team Lead
-
-**Success Criteria for Phase 2**:
-- [ ] All 4 role dashboards built with real data (no mock)
-- [ ] All dashboards handle loading/error/success states
-- [ ] Design system applied (buttons, cards, spacing consistent)
-- [ ] No hardcoded data anywhere
-- [ ] All restricted features wrapped in RoleGate
-- [ ] API endpoints for dashboard data (connect DB queries to HTTP routes)
-- [ ] Team members understand the three-state pattern cold
-- [ ] New code PRs all follow golden rules
-
----
-
-## Deployment
-
-### Local Development
-
+### Setup
 ```bash
+# Install dependencies
 npm install
-cp .env.example .env.development.local
-# Add your Supabase URL & keys
+
+# Run dev server
 npm run dev
+
+# Visit http://localhost:3000
+# Will redirect to login (Supabase required)
 ```
 
-### Production
+### Test Different Roles
+Update the `role` in Supabase `users` table to test:
+- `faculty` → Faculty Dashboard
+- `hod` → HOD Dashboard
+- `dean` → HOD Dashboard
+- `director` → Director Dashboard
+- `finance` → Finance Dashboard
+- `admin`/other → Generic Dashboard
 
-```bash
-# Vercel
-vercel deploy
+---
 
-# Env vars added via Vercel dashboard (Dashboard Secrets)
+## 📂 Project Structure
+
+```
+/src
+├── /app
+│   ├── /(app)/
+│   │   ├── dashboard/page.tsx          ✅ Role router
+│   │   ├── my-work/page.tsx            🚧 TODO
+│   │   ├── task-pool/page.tsx          🚧 TODO
+│   │   ├── approvals/page.tsx          🚧 TODO
+│   │   ├── team/page.tsx               🚧 TODO
+│   │   ├── settings/page.tsx           🚧 TODO
+│   │   └── layout.tsx                  ✅ Auth check
+│   ├── /(auth)/
+│   │   ├── login/page.tsx              ✅
+│   │   └── signup/page.tsx             ✅
+│   └── /api
+│       ├── /dashboard/                 🚧 TODO (4 endpoints)
+│       ├── /tasks/                     🚧 TODO
+│       ├── /attendance/                🚧 TODO
+│       └── /approvals/                 🚧 TODO
+├── /components
+│   ├── /dashboard
+│   │   ├── FacultyDashboard.tsx        ✅ Dynamic data ready
+│   │   ├── HodDashboard.tsx            ✅ Dynamic data ready
+│   │   ├── DirectorDashboard.tsx       ✅ Dynamic data ready
+│   │   └── GenericDashboard.tsx        ✅ Finance Admin dashboard
+│   └── /layout
+│       └── AppSidebar.tsx              ✅ Role-based nav
+├── /lib
+│   └── /supabase
+│       ├── client.ts                   ✅
+│       └── server.ts                   ✅
+└── /utils
+    └── /supabase
+        └── client.ts                   ✅
 ```
 
 ---
 
-## Support & Questions
+## 🎨 Design System
 
-If you're stuck:
-
-1. **Check DEVELOPMENT.md** for the three-state pattern
-2. **Check .context/systemPatterns.md** for architecture rules
-3. **Look at lib/db/queries/** to see how other queries are written
-4. **Check components/common/** to see error handling patterns
-
-If still stuck: Check with the team lead. Document the solution so others learn.
+**Colors**: Primary (blue), Success (green), Warning (orange), Error (red), Muted (gray)  
+**Typography**: Inter font, responsive sizes  
+**Components**: Card-based, Tailwind CSS, Lucide icons  
+**Layout**: Sidebar + Main content, mobile responsive
 
 ---
 
-## Final Note
+## 🔐 Authentication Flow
 
-This codebase is built for **team development**. Every file is documented. Every pattern is explained. Every rule is explicit. No surprises.
-
-Read `implementation_plan.md`. It's your Bible. Refer to it constantly.
-
-Welcome to the team. Let's build something fair.
+```
+User → Login/Signup (Supabase)
+   ↓
+AppLayout: Fetch user role from DB
+   ↓
+Route to dashboard based on role
+   ↓
+Dashboard shows role-specific UI
+```
 
 ---
 
-**Questions?** Reference the files above. Answers are there.
+## 📊 Data Flow (Once APIs Connected)
 
+```
+User clicks action (e.g., "Mark Attendance")
+   ↓
+API call to /api/attendance/mark
+   ↓
+Update Supabase DB
+   ↓
+SWR hook refetch
+   ↓
+Dashboard re-renders with new data
+```
+
+---
+
+## 📚 Key Roles & Responsibilities
+
+### Faculty
+- View progress toward 85% threshold
+- Mark attendance for structured sessions
+- Nominate for unstructured tasks
+- Request salary transfer when eligible
+- View active commitments
+
+### HOD (Head of Department)
+- Approve/reject salary transfer requests
+- Create unstructured tasks for department
+- View department progress heatmap
+- Monitor faculty attendance
+- Allocate task nominees
+
+### Director
+- Institution-wide overview
+- Approve loans for faculty below threshold
+- Monitor department performance
+- View token circulation statistics
+- Final loan approval authority
+
+### Finance Admin
+- See all faculty token balances
+- Verify batch readiness for reversal
+- Trigger final salary transfer
+- View transaction audit log
+- Control salary release timing
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 15 + React 19 (App Router)
+- **Backend**: Next.js API routes
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth (email/password)
+- **UI**: Tailwind CSS + shadcn/ui components
+- **Icons**: Lucide React
+- **State**: React hooks + SWR for caching
+- **Forms**: React Hook Form + Zod validation
+
+---
+
+## 📖 Documentation
+
+- **BUILD_GUIDE.md** - Development roadmap & API specs
+- **DASHBOARDS_SUMMARY.md** - Visual layout & architecture
+- **README.md** - This file
+
+---
+
+## 💡 Important Notes
+
+1. **Mock Data Ready**: All dashboards use realistic data structures matching mockups
+2. **No Real Data Yet**: Swap mock arrays with API responses when ready
+3. **Role Guards**: Layout redirects to login if not authenticated
+4. **Database Not Set Up**: Supabase tables need to be created first
+5. **API Endpoints Empty**: Need to build 4+ dashboard endpoints
+
+---
+
+## 🎯 Next 3 Steps to MVP
+
+1. **Setup Supabase Tables** (1 hour)
+   - Create schema for users, tasks, schedule, approvals, transactions
+   - Add test data
+
+2. **Build API Endpoints** (2-3 hours)
+   - `/api/dashboard/faculty/[id]`
+   - `/api/dashboard/hod/[dept_id]`
+   - `/api/dashboard/director/[org_id]`
+   - `/api/dashboard/finance`
+
+3. **Connect Dashboards to Real Data** (1 hour)
+   - Replace mock data with SWR hooks
+   - Test with actual Supabase queries
+
+**Estimated time to functional MVP: 4-5 hours**
+
+---
+
+## 📞 Support
+
+- Check BUILD_GUIDE.md for API specifications
+- Check DASHBOARDS_SUMMARY.md for UI/UX reference
+- Review existing dashboard components for data structure patterns
+- Supabase docs: https://supabase.com/docs
+
+---
+
+**Last Updated**: Latest build  
+**Status**: Clean dashboards ready for data integration  
+**Next Phase**: Backend API + Database Schema
